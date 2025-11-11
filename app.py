@@ -12,7 +12,7 @@ elements = [
     {"name":"헬륨","symbol":"He","number":2,"period":1,"group":18,"type":"비활성기체"},
     {"name":"리튬","symbol":"Li","number":3,"period":2,"group":1,"type":"금속"},
     {"name":"베릴륨","symbol":"Be","number":4,"period":2,"group":2,"type":"금속"},
-    {"name":"붕소","symbol":"B","number":5,"period":2,"group":13,"type":"반금속"},
+    {"name":"붕소","symbol":"B","number":5,"period":2,"group":13,"type":"준금속"},
     {"name":"탄소","symbol":"C","number":6,"period":2,"group":14,"type":"비금속"},
     {"name":"질소","symbol":"N","number":7,"period":2,"group":15,"type":"비금속"},
     {"name":"산소","symbol":"O","number":8,"period":2,"group":16,"type":"비금속"},
@@ -21,7 +21,7 @@ elements = [
     {"name":"나트륨","symbol":"Na","number":11,"period":3,"group":1,"type":"금속"},
     {"name":"마그네슘","symbol":"Mg","number":12,"period":3,"group":2,"type":"금속"},
     {"name":"알루미늄","symbol":"Al","number":13,"period":3,"group":13,"type":"금속"},
-    {"name":"규소","symbol":"Si","number":14,"period":3,"group":14,"type":"반금속"},
+    {"name":"규소","symbol":"Si","number":14,"period":3,"group":14,"type":"준금속"},
     {"name":"인","symbol":"P","number":15,"period":3,"group":15,"type":"비금속"},
     {"name":"황","symbol":"S","number":16,"period":3,"group":16,"type":"비금속"},
     {"name":"염소","symbol":"Cl","number":17,"period":3,"group":17,"type":"비금속"},
@@ -31,16 +31,17 @@ elements = [
 ]
 
 # -------------------------------
+# 🔹 매번 새로고침마다 새로운 퀴즈 생성
+quiz = []
+for elem in elements:
+    info_types = ["symbol","number","period","group","type"]
+    chosen_info = random.choice(info_types)
+    quiz.append({"elem":elem,"info":chosen_info})
+random.shuffle(quiz)
+
+# -------------------------------
 # 🔹 세션 초기화
-if "quiz" not in st.session_state:
-    # 각 원소에서 1~5개 정보 중 랜덤 선택
-    quiz = []
-    for elem in elements:
-        info_types = ["symbol","number","period","group","type"]
-        chosen_info = random.choice(info_types)
-        quiz.append({"elem":elem,"info":chosen_info})
-    random.shuffle(quiz)
-    st.session_state.quiz = quiz
+if "index" not in st.session_state:
     st.session_state.index = 0
     st.session_state.answers = []
     st.session_state.show_result = False
@@ -53,14 +54,13 @@ def handle_submit():
         st.warning("⚠️ 답을 입력해주세요!")
         return
 
-    # 첫 입력 시점 기록
     if st.session_state.start_time is None:
         st.session_state.start_time = time.time()
 
     st.session_state.answers.append(ans)
     st.session_state.current_input = ""
 
-    if st.session_state.index + 1 < len(st.session_state.quiz):
+    if st.session_state.index + 1 < len(quiz):
         st.session_state.index += 1
     else:
         st.session_state.show_result = True
@@ -70,7 +70,7 @@ def handle_submit():
 if st.session_state.show_result:
     st.success("🎉 퀴즈 완료!")
     score = 0
-    for i, item in enumerate(st.session_state.quiz):
+    for i, item in enumerate(quiz):
         elem = item["elem"]
         info = item["info"]
         user = st.session_state.answers[i]
@@ -97,28 +97,26 @@ if st.session_state.show_result:
         else:
             st.write(f"❌ {i+1}. {question_text} → {user} (정답: {correct})")
 
-    # ⏱️ 시간 계산
     if st.session_state.start_time:
         elapsed = time.time() - st.session_state.start_time
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
         st.markdown(f"⏱️ **총 소요 시간:** {minutes}분 {seconds}초")
     
-    st.subheader(f"총 점수: {score} / {len(st.session_state.quiz)}")
+    st.subheader(f"총 점수: {score} / {len(quiz)}")
 
     if st.button("🔁 다시 시작하기"):
-        for key in ["quiz","index","answers","show_result","start_time","current_input"]:
+        for key in ["index","answers","show_result","start_time","current_input"]:
             st.session_state.pop(key, None)
         st.rerun()
 
 # 🔹 퀴즈 진행 중
 else:
     i = st.session_state.index
-    item = st.session_state.quiz[i]
+    item = quiz[i]
     elem = item["elem"]
     info = item["info"]
 
-    # 질문 텍스트
     if info == "symbol":
         question_text = f"{elem['name']}의 원소 기호는?"
     elif info == "number":
