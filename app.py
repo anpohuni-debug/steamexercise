@@ -31,46 +31,53 @@ elements = [
 ]
 
 # -------------------------------
-# 🔹 매번 새로고침마다 새로운 퀴즈 생성
-quiz = []
-for elem in elements:
-    info_types = ["symbol","number","period","group","type"]
-    chosen_info = random.choice(info_types)
-    quiz.append({"elem":elem,"info":chosen_info})
-random.shuffle(quiz)
+# 🔹 새 퀴즈 생성 함수
+def create_quiz():
+    quiz = []
+    for elem in elements:
+        info_types = ["symbol","number","period","group","type"]
+        chosen_info = random.choice(info_types)
+        quiz.append({"elem": elem, "info": chosen_info})
+    random.shuffle(quiz)
+    return quiz
 
 # -------------------------------
-# 🔹 세션 초기화
-if "index" not in st.session_state:
+# 🔹 세션 상태 초기화 및 새 퀴즈 생성
+if "quiz" not in st.session_state:
+    st.session_state.quiz = create_quiz()
     st.session_state.index = 0
     st.session_state.answers = []
     st.session_state.show_result = False
     st.session_state.start_time = None
     st.session_state.current_input = ""
 
+# -------------------------------
+# 🔹 제출 처리 함수
 def handle_submit():
     ans = st.session_state.current_input.strip()
     if ans == "":
         st.warning("⚠️ 답을 입력해주세요!")
         return
 
+    # 첫 문제 입력 시 시간 측정 시작
     if st.session_state.start_time is None:
         st.session_state.start_time = time.time()
 
     st.session_state.answers.append(ans)
     st.session_state.current_input = ""
 
-    if st.session_state.index + 1 < len(quiz):
+    if st.session_state.index + 1 < len(st.session_state.quiz):
         st.session_state.index += 1
     else:
         st.session_state.show_result = True
     st.rerun()
 
+# -------------------------------
 # 🔹 결과 화면
 if st.session_state.show_result:
     st.success("🎉 퀴즈 완료!")
     score = 0
-    for i, item in enumerate(quiz):
+    for i, item in enumerate(st.session_state.quiz):
         elem = item["elem"]
         info = item["info"]
         user = st.session_state.answers[i]
@@ -97,23 +104,30 @@ if st.session_state.show_result:
         else:
             st.write(f"❌ {i+1}. {question_text} → {user} (정답: {correct})")
 
+    # 소요 시간 표시
     if st.session_state.start_time:
         elapsed = time.time() - st.session_state.start_time
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
         st.markdown(f"⏱️ **총 소요 시간:** {minutes}분 {seconds}초")
     
-    st.subheader(f"총 점수: {score} / {len(quiz)}")
+    st.subheader(f"총 점수: {score} / {len(st.session_state.quiz)}")
 
+    # 새 퀴즈 생성 버튼
     if st.button("🔁 다시 시작하기"):
-        for key in ["index","answers","show_result","start_time","current_input"]:
-            st.session_state.pop(key, None)
+        st.session_state.quiz = create_quiz()
+        st.session_state.index = 0
+        st.session_state.answers = []
+        st.session_state.show_result = False
+        st.session_state.start_time = None
+        st.session_state.current_input = ""
         st.rerun()
 
+# -------------------------------
 # 🔹 퀴즈 진행 중
 else:
     i = st.session_state.index
-    item = quiz[i]
+    item = st.session_state.quiz[i]
     elem = item["elem"]
     info = item["info"]
 
