@@ -22,29 +22,36 @@ if "current" not in st.session_state:
     st.session_state.current = 0
     st.session_state.answers = []
     st.session_state.finished = False
+    st.session_state.temp_answer = ""  # 입력값 임시 저장용
 
 formulas = list(quiz.keys())
 
 # 🔹 퀴즈 진행 중
 if not st.session_state.finished:
-    current_index = st.session_state.current
-    formula = formulas[current_index]
+    idx = st.session_state.current
+    formula = formulas[idx]
 
-    st.subheader(f"문제 {current_index + 1} / {len(formulas)}")
+    st.subheader(f"문제 {idx + 1} / {len(formulas)}")
     st.write(f"👉 **{formula}** 의 물질 이름은 무엇일까요?")
 
-    with st.form(key=f"form_{current_index}"):
-        answer = st.text_input("정답 입력:")
-        submitted = st.form_submit_button("다음 문제 ➡️")
+    # 🔹 입력받기 (폼 제거 — 대신 일반 입력 + 버튼)
+    st.session_state.temp_answer = st.text_input(
+        "정답 입력:",
+        value=st.session_state.temp_answer,
+        key=f"answer_{idx}"
+    )
 
-        if submitted:
-            st.session_state.answers.append(answer.strip())
-            st.session_state.current += 1
-            if st.session_state.current >= len(formulas):
-                st.session_state.finished = True
-            st.experimental_rerun()
+    if st.button("다음 문제 ➡️"):
+        answer = st.session_state.temp_answer.strip()
+        st.session_state.answers.append(answer)
+        st.session_state.temp_answer = ""
 
-# 🔹 모든 문제를 푼 뒤 결과 출력
+        st.session_state.current += 1
+        if st.session_state.current >= len(formulas):
+            st.session_state.finished = True
+        st.experimental_rerun()
+
+# 🔹 결과 출력
 else:
     st.success("🎉 퀴즈 완료!")
     score = 0
@@ -63,7 +70,6 @@ else:
     st.subheader(f"총 점수: {score} / {len(formulas)}")
 
     if st.button("🔁 다시 시작하기"):
-        st.session_state.current = 0
-        st.session_state.answers = []
-        st.session_state.finished = False
+        for key in ["current", "answers", "finished", "temp_answer"]:
+            st.session_state[key] = 0 if key == "current" else [] if key == "answers" else False if key == "finished" else ""
         st.experimental_rerun()
