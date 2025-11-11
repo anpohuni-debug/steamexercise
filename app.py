@@ -1,102 +1,137 @@
 import streamlit as st
+import random
 import time
 
-st.set_page_config(page_title="분자식 퀴즈", page_icon="🧪")
-st.title("🧪 분자식 퀴즈 게임")
+st.set_page_config(page_title="단답형 주기율표 퀴즈", page_icon="🧪")
+st.title("🧪 단답형 주기율표 퀴즈 (20문제)")
 
-# 🔹 문제 목록
-quiz = [
-    ("H₂O", "물"),
-    ("CO₂", "이산화탄소"),
-    ("O₂", "산소"),
-    ("NaCl", "염화나트륨"),
-    ("CH₄", "메테인"),
-    ("NH₃", "암모니아"),
-    ("C₂H₅OH", "에탄올"),
-    ("H₂SO₄", "황산"),
-    ("CaCO₃", "탄산칼슘"),
-    ("N₂", "질소")
+# -------------------------------
+# 🔹 원소 데이터 (20개)
+elements = [
+    {"name":"수소","symbol":"H","number":1,"period":1,"group":1,"type":"비금속"},
+    {"name":"헬륨","symbol":"He","number":2,"period":1,"group":18,"type":"비활성기체"},
+    {"name":"리튬","symbol":"Li","number":3,"period":2,"group":1,"type":"금속"},
+    {"name":"베릴륨","symbol":"Be","number":4,"period":2,"group":2,"type":"금속"},
+    {"name":"붕소","symbol":"B","number":5,"period":2,"group":13,"type":"반금속"},
+    {"name":"탄소","symbol":"C","number":6,"period":2,"group":14,"type":"비금속"},
+    {"name":"질소","symbol":"N","number":7,"period":2,"group":15,"type":"비금속"},
+    {"name":"산소","symbol":"O","number":8,"period":2,"group":16,"type":"비금속"},
+    {"name":"플루오린","symbol":"F","number":9,"period":2,"group":17,"type":"비금속"},
+    {"name":"네온","symbol":"Ne","number":10,"period":2,"group":18,"type":"비활성기체"},
+    {"name":"나트륨","symbol":"Na","number":11,"period":3,"group":1,"type":"금속"},
+    {"name":"마그네슘","symbol":"Mg","number":12,"period":3,"group":2,"type":"금속"},
+    {"name":"알루미늄","symbol":"Al","number":13,"period":3,"group":13,"type":"금속"},
+    {"name":"규소","symbol":"Si","number":14,"period":3,"group":14,"type":"반금속"},
+    {"name":"인","symbol":"P","number":15,"period":3,"group":15,"type":"비금속"},
+    {"name":"황","symbol":"S","number":16,"period":3,"group":16,"type":"비금속"},
+    {"name":"염소","symbol":"Cl","number":17,"period":3,"group":17,"type":"비금속"},
+    {"name":"아르곤","symbol":"Ar","number":18,"period":3,"group":18,"type":"비활성기체"},
+    {"name":"칼륨","symbol":"K","number":19,"period":4,"group":1,"type":"금속"},
+    {"name":"칼슘","symbol":"Ca","number":20,"period":4,"group":2,"type":"금속"},
 ]
 
-# 🔹 세션 상태 초기화
-if "index" not in st.session_state:
+# -------------------------------
+# 🔹 세션 초기화
+if "quiz" not in st.session_state:
+    # 각 원소에서 1~5개 정보 중 랜덤 선택
+    quiz = []
+    for elem in elements:
+        info_types = ["symbol","number","period","group","type"]
+        chosen_info = random.choice(info_types)
+        quiz.append({"elem":elem,"info":chosen_info})
+    random.shuffle(quiz)
+    st.session_state.quiz = quiz
     st.session_state.index = 0
     st.session_state.answers = []
     st.session_state.show_result = False
-    st.session_state.start_time = None  # 시작 시간
-    st.session_state.current_input = ""  # 현재 입력값
+    st.session_state.start_time = None
+    st.session_state.current_input = ""
 
 def handle_submit():
-    """엔터키로 입력 완료 시 실행"""
     ans = st.session_state.current_input.strip()
-
-    # 첫 입력 시점에 시간 측정 시작
-    if st.session_state.start_time is None:
-        st.session_state.start_time = time.time()
-
     if ans == "":
         st.warning("⚠️ 답을 입력해주세요!")
         return
 
+    # 첫 입력 시점 기록
+    if st.session_state.start_time is None:
+        st.session_state.start_time = time.time()
+
     st.session_state.answers.append(ans)
     st.session_state.current_input = ""
 
-    if st.session_state.index + 1 < len(quiz):
+    if st.session_state.index + 1 < len(st.session_state.quiz):
         st.session_state.index += 1
     else:
         st.session_state.show_result = True
-
     st.rerun()
 
-# 🔹 퀴즈 완료 후 결과 표시
+# 🔹 결과 화면
 if st.session_state.show_result:
     st.success("🎉 퀴즈 완료!")
-
     score = 0
-    for i, (formula, correct) in enumerate(quiz):
+    for i, item in enumerate(st.session_state.quiz):
+        elem = item["elem"]
+        info = item["info"]
         user = st.session_state.answers[i]
-        if user == correct:
-            st.write(f"✅ {i+1}. {formula} → {user} (정답!)")
+
+        if info == "symbol":
+            question_text = f"{elem['name']}의 원소 기호는?"
+            correct = elem["symbol"]
+        elif info == "number":
+            question_text = f"{elem['name']}의 원자번호는?"
+            correct = str(elem["number"])
+        elif info == "period":
+            question_text = f"{elem['name']}는 몇 주기인가요?"
+            correct = str(elem["period"])
+        elif info == "group":
+            question_text = f"{elem['name']}는 몇 족인가요?"
+            correct = str(elem["group"])
+        elif info == "type":
+            question_text = f"{elem['name']}의 원소 종류는?"
+            correct = elem["type"]
+
+        if user.strip().lower() == correct.lower():
+            st.write(f"✅ {i+1}. {question_text} → {user} (정답!)")
             score += 1
         else:
-            st.write(f"❌ {i+1}. {formula} → {user} (정답: {correct})")
+            st.write(f"❌ {i+1}. {question_text} → {user} (정답: {correct})")
 
-    # 🔹 시간 계산
+    # ⏱️ 시간 계산
     if st.session_state.start_time:
         elapsed = time.time() - st.session_state.start_time
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
         st.markdown(f"⏱️ **총 소요 시간:** {minutes}분 {seconds}초")
-
-    st.subheader(f"총 점수: {score} / {len(quiz)}")
+    
+    st.subheader(f"총 점수: {score} / {len(st.session_state.quiz)}")
 
     if st.button("🔁 다시 시작하기"):
-        for key in ["index", "answers", "show_result", "start_time", "current_input"]:
-            if key == "index":
-                st.session_state[key] = 0
-            elif key == "answers":
-                st.session_state[key] = []
-            elif key == "show_result":
-                st.session_state[key] = False
-            else:
-                st.session_state[key] = None if key == "start_time" else ""
+        for key in ["quiz","index","answers","show_result","start_time","current_input"]:
+            st.session_state.pop(key, None)
         st.rerun()
 
 # 🔹 퀴즈 진행 중
 else:
     i = st.session_state.index
-    formula, correct = quiz[i]
+    item = st.session_state.quiz[i]
+    elem = item["elem"]
+    info = item["info"]
 
-    st.subheader(f"문제 {i+1} / {len(quiz)}")
-    st.write(f"👉 **{formula}** 의 물질 이름은 무엇일까요?")
+    # 질문 텍스트
+    if info == "symbol":
+        question_text = f"{elem['name']}의 원소 기호는?"
+    elif info == "number":
+        question_text = f"{elem['name']}의 원자번호는?"
+    elif info == "period":
+        question_text = f"{elem['name']}는 몇 주기인가요?"
+    elif info == "group":
+        question_text = f"{elem['name']}는 몇 족인가요?"
+    elif info == "type":
+        question_text = f"{elem['name']}의 원소 종류는?"
 
-    # 🔹 엔터키로 제출 가능 (on_change 이벤트 사용)
-    st.text_input(
-        "정답 입력:",
-        key="current_input",
-        on_change=handle_submit
-    )
-
-    # 혹시 버튼으로도 제출하고 싶을 경우
+    st.subheader(f"문제 {i+1} / 20")
+    st.write(f"👉 {question_text}")
+    st.text_input("정답 입력:", key="current_input", on_change=handle_submit)
     if st.button("다음 문제 ➡️"):
         handle_submit()
